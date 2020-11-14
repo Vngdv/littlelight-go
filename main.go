@@ -6,13 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
 	"github.com/bwmarrin/discordgo"
 )
 
-// Variables used for command line parameters
-var (
-	Token string
-)
+// Discord Token varibale
+var Token string
 
 func init() {
 
@@ -25,7 +24,7 @@ func init() {
 }
 
 func main() {
-	fmt.Println(Token)
+	loadStorage()
 
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + Token)
@@ -34,12 +33,10 @@ func main() {
 		return
 	}
 
-	// Register the messageCreate func as a callback for MessageCreate events.
-	// dg.AddHandler(messageCreate)
+	// Add the voice state update handler
 	dg.AddHandler(voiceStateUpdate)
 
-	// In this example, we only care about receiving message events.
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsGuildVoiceStates)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates)
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -58,31 +55,54 @@ func main() {
 	dg.Close()
 }
 
-
 func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
-	fmt.Println("Update")
-	vc, err := session.Channel(event.ChannelID)
+	gs, gsExist := storage.Guilds[event.GuildID]
 
-	if err != nil {
-		fmt.Println("Channel not found :", err)
-		return;
+	if !gsExist {
+		return
 	}
-	
+
 	g, err := session.Guild(event.GuildID)
 
 	if err != nil {
 		fmt.Println("Guild not found :", err)
-		return;
+		return
 	}
 
-	if vc.ParentID == "775393101975388232" && vc.ID != "775399800207835140" {
-			// g.VoiceStates
-			if getUserAmountByChannelId(g.VoiceStates, vc.ID) == 0 {
+	if len(event.ChannelID) == 0 {
+		c, err := session.GuildChannels(event.GuildID)
 
-			}		
-	} else if vc.ID == "775399800207835140" {
-		var newChannel discordgo.GuildChannelCreateData;
-		newChannel.Name = "Voice Channel"
+		if err != nil {
+			fmt.Println("Could not retrive channel list for guild:", err)
+		}
+
+		for _, channel := range c {
+			// Check only for voice channels, and do not delete our creation channel
+			if channel.Type == 2 && channel.ParentID == gs.ChannelCategory && channel.ID != gs.CreationChannel {
+				if getUserAmountByChannelId(g.VoiceStates, channel.ID) == 0 {
+					fmt.Println("Deleted unused channel: ", channel.ID)
+					session.ChannelDelete(channel.ID)
+				}
+			}
+		}
+		return
+	}
+
+	vc, err := session.Channel(event.ChannelID)
+
+	if err != nil {
+		fmt.Println("Channel not found :", err)
+		return
+	}
+
+	if vc.ID == gs.CreationChannel {
+		var newChannel discordgo.GuildChannelCreateData
+		if len(storage.ChannelNames[event.UserID]) > 0 {
+			newChannel.Name = storage.ChannelNames[event.UserID]
+		} else {
+			newChannel.Name = "Voice Channel"
+		}
+
 		newChannel.ParentID = vc.ParentID
 		newChannel.Type = 2 // Voice Channel
 
@@ -90,16 +110,14 @@ func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpd
 
 		if err != nil {
 			fmt.Println("Channel could not be created:", err)
-			return;
+			return
 		}
 
 		session.GuildMemberMove(vc.GuildID, event.UserID, &nc.ID)
 	}
-
-	// fmt.Println(s.StateEnabled)
 }
 
-func getUserAmountByChannelId(states []*discordgo.VoiceState, cid string) (int) {
+func getUserAmountByChannelId(states []*discordgo.VoiceState, cid string) int {
 	var amount int = 0
 	for _, state := range states {
 		if state.ChannelID == cid {
