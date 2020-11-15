@@ -36,7 +36,7 @@ func main() {
 	// Add the voice state update handler
 	dg.AddHandler(voiceStateUpdate)
 
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -55,14 +55,31 @@ func main() {
 	dg.Close()
 }
 
-func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
-	gs, gsExist := storage.Guilds[event.GuildID]
+// func channeUpdate(session *discordgo.Session, event *discordgo.ChannelUpdate) {
+// 	if event.Type != 2 {
+// 		return
+// 	}
 
-	if !gsExist {
+// 	gs, gsExist := storage.Guilds[event.GuildID]
+
+// 	if !gsExist {
+// 		return
+// 	}
+
+// 	if event.ParentID == gs.ChannelCategory {
+// 		// TODO get creator
+// 		// storage.ChannelNames[CREAROT ID] = event.Name
+// 		// storage.save
+// 	}
+// }
+
+func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
+	storedGuild, storedGuildExist := storage.Guilds[event.GuildID]
+	if !storedGuildExist {
 		return
 	}
 
-	g, err := session.Guild(event.GuildID)
+	g, err := session.State.Guild(event.GuildID)
 
 	if err != nil {
 		fmt.Println("Guild not found :", err)
@@ -78,7 +95,7 @@ func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpd
 
 		for _, channel := range c {
 			// Check only for voice channels, and do not delete our creation channel
-			if channel.Type == 2 && channel.ParentID == gs.ChannelCategory && channel.ID != gs.CreationChannel {
+			if channel.Type == 2 && channel.ParentID == storedGuild.ChannelCategory && channel.ID != storedGuild.CreationChannel {
 				if getUserAmountByChannelId(g.VoiceStates, channel.ID) == 0 {
 					fmt.Println("Deleted unused channel: ", channel.ID)
 					session.ChannelDelete(channel.ID)
@@ -95,7 +112,7 @@ func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpd
 		return
 	}
 
-	if vc.ID == gs.CreationChannel {
+	if vc.ID == storedGuild.CreationChannel {
 		var newChannel discordgo.GuildChannelCreateData
 		if len(storage.ChannelNames[event.UserID]) > 0 {
 			newChannel.Name = storage.ChannelNames[event.UserID]
