@@ -3,31 +3,33 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// Discord Token varibale
-var Token string
+// token is used to store the discord token
+var token string
 
 func init() {
 
-	flag.StringVar(&Token, "t", "", "Bot Token")
+	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.Parse()
 
-	if len(Token) == 0 {
-		Token = os.Getenv("TOKEN")
+	if len(token) == 0 {
+		token = os.Getenv("TOKEN")
 	}
 }
 
 func main() {
-	loadStorage()
+	// loadStorage()
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + Token)
+	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		fmt.Println("error creating Discord session,", err)
 		return
@@ -55,86 +57,99 @@ func main() {
 	dg.Close()
 }
 
-// func channeUpdate(session *discordgo.Session, event *discordgo.ChannelUpdate) {
-// 	if event.Type != 2 {
-// 		return
-// 	}
-
-// 	gs, gsExist := storage.Guilds[event.GuildID]
-
-// 	if !gsExist {
-// 		return
-// 	}
-
-// 	if event.ParentID == gs.ChannelCategory {
-// 		// TODO get creator
-// 		// storage.ChannelNames[CREAROT ID] = event.Name
-// 		// storage.save
-// 	}
-// }
-
+// Caching stuff would be more efficient but i expect this bot to not be online 24/7
 func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
-	storedGuild, storedGuildExist := storage.Guilds[event.GuildID]
-	if !storedGuildExist {
-		return
-	}
+	// Check if the guild is stored
+	// storedGuild, storedGuildExist := storage.Guilds[event.GuildID]
+	// if !storedGuildExist {
+	// 	return
+	// }
 
+	// Get the Guild or return. It is only possible in Guilds to create Voice Channels
 	g, err := session.State.Guild(event.GuildID)
-
 	if err != nil {
 		fmt.Println("Guild not found :", err)
 		return
 	}
+	// Delete channels or rename the last one
 
-	if len(event.ChannelID) == 0 {
-		c, err := session.GuildChannels(event.GuildID)
+	// Retrive the channes of this guild
+	c, err := session.GuildChannels(event.GuildID)
+	if err != nil {
+		fmt.Println("Could not retrive channel list for guild:", err)
+	}
 
-		if err != nil {
-			fmt.Println("Could not retrive channel list for guild:", err)
+	categorys := []*discordgo.Channel{}
+	emptyChannels := []*discordgo.Channel{}
+
+GuildChannelLookup:
+	for _, channel := range c {
+		if channel.Type == discordgo.ChannelTypeGuildCategory && strings.Contains(channel.Name, "🏴") {
+			categorys = append(categorys, channel)
+			continue
 		}
 
-		for _, channel := range c {
-			// Check only for voice channels, and do not delete our creation channel
-			if channel.Type == 2 && channel.ParentID == storedGuild.ChannelCategory && channel.ID != storedGuild.CreationChannel {
-				if getUserAmountByChannelId(g.VoiceStates, channel.ID) == 0 {
-					fmt.Println("Deleted unused channel: ", channel.ID)
-					session.ChannelDelete(channel.ID)
-				}
+		// Check if it is really a voice channel or continue if it is not
+		if channel.Type != discordgo.ChannelTypeGuildVoice {
+			continue
+		}
+
+		// Do stuff only if the category is okay we skip the current iteration here if the channel has not the right parent
+		for _, cat := range categorys {
+			if cat.ID != channel.ParentID {
+				continue GuildChannelLookup
 			}
 		}
-		return
+
+		// Add empty channels to list
+		if UserCount(g.VoiceStates, channel.ID) == 0 {
+			emptyChannels = append(emptyChannels, channel)
+		}
 	}
 
-	vc, err := session.Channel(event.ChannelID)
+	// Either create or delete channels
+	if len(emptyChannels) > 1 {
+		for i, emptyChannel := range emptyChannels {
+			if i == len(emptyChannels)-1 {
+				fmt.Println("Did not delete channel: ", emptyChannel.Name)
+				continue
+			}
+			fmt.Println("Deleted ", emptyChannel.Name)
+			session.ChannelDelete(emptyChannel.ID)
+		}
+	} else if len(categorys) > 0 {
 
-	if err != nil {
-		fmt.Println("Channel not found :", err)
-		return
-	}
-
-	if vc.ID == storedGuild.CreationChannel {
 		var newChannel discordgo.GuildChannelCreateData
-		if len(storage.ChannelNames[event.UserID]) > 0 {
-			newChannel.Name = storage.ChannelNames[event.UserID]
-		} else {
+
+		switch rand.Intn(5) {
+		case 0:
 			newChannel.Name = "Voice Channel"
+		case 1:
+			newChannel.Name = "Edge Channel"
+		case 2:
+			newChannel.Name = "🎈 Party Room"
+		case 3:
+			newChannel.Name = "Kuschel Ecke"
+		case 4:
+			newChannel.Name = "Another one"
+		case 5:
+			newChannel.Name = "Just do it"
 		}
 
-		newChannel.ParentID = vc.ParentID
-		newChannel.Type = 2 // Voice Channel
+		newChannel.ParentID = categorys[0].ID
+		newChannel.Type = discordgo.ChannelTypeGuildVoice
 
-		nc, err := session.GuildChannelCreateComplex(vc.GuildID, newChannel)
-
+		_, err := session.GuildChannelCreateComplex(g.ID, newChannel)
 		if err != nil {
-			fmt.Println("Channel could not be created:", err)
+			fmt.Println("Channel creation failed :", err)
 			return
 		}
 
-		session.GuildMemberMove(vc.GuildID, event.UserID, &nc.ID)
 	}
 }
 
-func getUserAmountByChannelId(states []*discordgo.VoiceState, cid string) int {
+// UserCount returns the amount of users that are currently in a channel.
+func UserCount(states []*discordgo.VoiceState, cid string) int {
 	var amount int = 0
 	for _, state := range states {
 		if state.ChannelID == cid {
