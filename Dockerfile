@@ -1,4 +1,4 @@
-FROM golang:alpine
+FROM golang:alpine as build
 # Create app directory and copy everything over there
 RUN apk add --update-cache git
 
@@ -10,4 +10,15 @@ WORKDIR /app
 RUN go get github.com/bwmarrin/discordgo
 RUN go build -o main .
 
-CMD ["/app/main"]
+# Production stage
+FROM alpine:latest
+
+COPY --from=build /app/main .
+
+# Add user for more security
+RUN addgroup -S littlelight && adduser -s /bin/false -S littlelight -G littlelight
+RUN chown -R littlelight:littlelight /main
+
+USER littlelight
+
+ENTRYPOINT ["/main"]
