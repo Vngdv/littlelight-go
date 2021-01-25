@@ -59,12 +59,6 @@ func main() {
 
 // Caching stuff would be more efficient but i expect this bot to not be online 24/7
 func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
-	// Check if the guild is stored
-	// storedGuild, storedGuildExist := storage.Guilds[event.GuildID]
-	// if !storedGuildExist {
-	// 	return
-	// }
-
 	// Get the Guild or return. It is only possible in Guilds to create Voice Channels
 	g, err := session.State.Guild(event.GuildID)
 	if err != nil {
