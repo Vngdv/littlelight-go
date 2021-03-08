@@ -49,7 +49,7 @@ func main() {
 
 	// Add the voice state update handler and set the intents
 	dg.AddHandler(voiceStateUpdate)
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds | discordgo.IntentsDirectMessages)
 
 	// Open a websocket connection to Discord and begin listening.
 	err = dg.Open()
@@ -140,15 +140,27 @@ GuildChannelLookup:
 
 	// ---------------- Channel owning system ----------------
 
+	guildMember, _ := session.GuildMember(event.GuildID, event.UserID)
+
+	// If the user is a bot we stop here
+	if guildMember.User.Bot {
+		return
+	}
+
 	// Check if the user joind in an empty channel that has now one user
 	if UserCount(g.VoiceStates, event.ChannelID) == 1 {
-		// TODO edit channel
-		println(event.UserID)
-
 		var channelEdit discordgo.ChannelEdit
 
-		// TODO check if the user has a custom name
-		channelEdit.Name = channelNames[rand.Intn(len(channelNames))]
+		// Get last message
+		userChannel, _ := session.UserChannelCreate(event.UserID)
+		messages, _ := session.ChannelMessages(userChannel.ID, 1, "", "", "")
+
+		// Use custom name for channel if provided
+		if len(messages) > 0 {
+			channelEdit.Name = messages[0].Content
+		} else {
+			channelEdit.Name = channelNames[rand.Intn(len(channelNames))]
+		}
 
 		_, err := session.ChannelEditComplex(event.ChannelID, &channelEdit)
 		if err != nil {
