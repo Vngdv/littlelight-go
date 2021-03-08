@@ -2,7 +2,7 @@
 
 This is Discordbot is used to create Channels for Users
 
-This Goal of this Bot is to just work. It will not save any data or use configuration files.
+This Bot is written in a way that allows it to work without any config files.
 
 ## Configuration
 
