@@ -122,10 +122,19 @@ GuildChannelLookup:
 	}
 
 	// Either create or delete channels
-	if len(emptyChannels) > 1 {
+	if len(emptyChannels) > 0 {
 		for i, emptyChannel := range emptyChannels {
 			if i == len(emptyChannels)-1 {
 				fmt.Println("Did not delete channel: ", emptyChannel.Name)
+
+				// Rename the channel if neede
+				if emptyChannel.Name != joinChannelName {
+					// Rename channel
+					var channelEdit discordgo.ChannelEdit
+					channelEdit.Name = joinChannelName
+
+					session.ChannelEditComplex(emptyChannel.ID, &channelEdit)
+				}
 				continue
 			}
 			fmt.Println("Deleted ", emptyChannel.Name)
