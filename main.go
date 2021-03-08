@@ -126,7 +126,7 @@ GuildChannelLookup:
 		var newChannel discordgo.GuildChannelCreateData
 
 		// Random channel name
-		newChannel.Name = channelNames[rand.Intn(len(channelNames))]
+		newChannel.Name = "📢 Join to own"
 
 		newChannel.ParentID = categorys[0].ID
 		newChannel.Type = discordgo.ChannelTypeGuildVoice
@@ -136,7 +136,25 @@ GuildChannelLookup:
 			fmt.Println("Channel creation failed :", err)
 			return
 		}
+	}
 
+	// ---------------- Channel owning system ----------------
+
+	// Check if the user joind in an empty channel that has now one user
+	if UserCount(g.VoiceStates, event.ChannelID) == 1 {
+		// TODO edit channel
+		println(event.UserID)
+
+		var channelEdit discordgo.ChannelEdit
+
+		// TODO check if the user has a custom name
+		channelEdit.Name = channelNames[rand.Intn(len(channelNames))]
+
+		_, err := session.ChannelEditComplex(event.ChannelID, &channelEdit)
+		if err != nil {
+			fmt.Println("Channel edit failed :", err)
+			return
+		}
 	}
 }
 
