@@ -13,23 +13,33 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var channelNames = [...]string{
+var channelNames = []string{
 	"Voice Channel",
-	"Edge Channel",
 	"🎈 Party Room",
-	"Kuschel Ecke",
-	"Another one",
-	"Just do it",
-	"Locked Room",
 }
+
+var joinChannelName = "📢 Join to own"
+
+var categoryIdentifier string = "🎤"
 
 // token is used to store the discord token
 var token string
 
 func init() {
-
+	var names string
+	flag.StringVar(&names, "n", "", "Channel Names")
+	flag.StringVar(&joinChannelName, "j", "", "Join Channel Name")
+	flag.StringVar(&categoryIdentifier, "c", "", "Category Identifier")
 	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.Parse()
+
+	if len(names) == 0 {
+		channelNames = strings.Split(names, ";")
+	}
+
+	println("Found", len(channelNames), "Channel names")
+	println("Join Channel Name:", joinChannelName)
+	println("Category Identifier:", categoryIdentifier)
 
 	if len(token) == 0 {
 		token = os.Getenv("TOKEN")
@@ -88,7 +98,7 @@ func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpd
 
 GuildChannelLookup:
 	for _, channel := range c {
-		if channel.Type == discordgo.ChannelTypeGuildCategory && strings.Contains(channel.Name, "🏴") {
+		if channel.Type == discordgo.ChannelTypeGuildCategory && strings.Contains(channel.Name, categoryIdentifier) {
 			categorys = append(categorys, channel)
 			continue
 		}
@@ -105,8 +115,17 @@ GuildChannelLookup:
 			}
 		}
 
+		channel, err := session.State.Channel(event.ChannelID)
+		if err != nil {
+			return
+		}
+		parent, err := session.State.Channel(channel.ParentID)
+		if err != nil {
+			return
+		}
+
 		// Add empty channels to list
-		if UserCount(g.VoiceStates, channel.ID) == 0 {
+		if UserCount(g.VoiceStates, channel.ID) == 0 && strings.Contains(parent.Name, categoryIdentifier) {
 			emptyChannels = append(emptyChannels, channel)
 		}
 	}
@@ -126,7 +145,7 @@ GuildChannelLookup:
 		var newChannel discordgo.GuildChannelCreateData
 
 		// Random channel name
-		newChannel.Name = "📢 Join to own"
+		newChannel.Name = joinChannelName
 
 		newChannel.ParentID = categorys[0].ID
 		newChannel.Type = discordgo.ChannelTypeGuildVoice
