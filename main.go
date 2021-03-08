@@ -75,12 +75,12 @@ func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpd
 		fmt.Println("Guild not found :", err)
 		return
 	}
-	// Delete channels or rename the last one
 
 	// Retrive the channes of this guild
 	c, err := session.GuildChannels(event.GuildID)
 	if err != nil {
 		fmt.Println("Could not retrive channel list for guild:", err)
+		return
 	}
 
 	categorys := []*discordgo.Channel{}
@@ -107,6 +107,7 @@ GuildChannelLookup:
 
 		// Add empty channels to list
 		if UserCount(g.VoiceStates, channel.ID) == 0 {
+			println(channel.ID)
 			emptyChannels = append(emptyChannels, channel)
 		}
 	}
@@ -121,7 +122,9 @@ GuildChannelLookup:
 			fmt.Println("Deleted ", emptyChannel.Name)
 			session.ChannelDelete(emptyChannel.ID)
 		}
-	} else if len(categorys) > 0 {
+	} else if len(emptyChannels) == 0 {
+		println("-------------")
+		println(len(emptyChannels))
 
 		var newChannel discordgo.GuildChannelCreateData
 
@@ -142,7 +145,7 @@ GuildChannelLookup:
 
 	guildMember, _ := session.GuildMember(event.GuildID, event.UserID)
 
-	// If the user is a bot we stop here
+	// Fully ignore bot users
 	if guildMember.User.Bot {
 		return
 	}
