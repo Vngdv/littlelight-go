@@ -18,9 +18,9 @@ var channelNames = []string{
 	"🎈 Party Room",
 }
 
-var joinChannelName = "📢 Join to own"
+var joinChannelName string
 
-var categoryIdentifier string = "🎤"
+var categoryIdentifier string
 
 // token is used to store the discord token
 var token string
@@ -28,12 +28,12 @@ var token string
 func init() {
 	var names string
 	flag.StringVar(&names, "n", "", "Channel Names")
-	flag.StringVar(&joinChannelName, "j", "", "Join Channel Name")
-	flag.StringVar(&categoryIdentifier, "c", "", "Category Identifier")
+	flag.StringVar(&joinChannelName, "j", "📢 Join to own", "Join Channel Name")
+	flag.StringVar(&categoryIdentifier, "c", "🎤", "Category Identifier")
 	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.Parse()
 
-	if len(names) == 0 {
+	if len(names) > 0 {
 		channelNames = strings.Split(names, ";")
 	}
 
