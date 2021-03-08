@@ -22,6 +22,8 @@ var joinChannelName string
 
 var categoryIdentifier string
 
+var defaultBitrate int
+
 // token is used to store the discord token
 var token string
 
@@ -31,6 +33,7 @@ func init() {
 	flag.StringVar(&joinChannelName, "j", "📢 Join to own", "Join Channel Name")
 	flag.StringVar(&categoryIdentifier, "c", "🎤", "Category Identifier")
 	flag.StringVar(&token, "t", "", "Bot Token")
+	flag.IntVar(&defaultBitrate, "b", 64, "Channel Bitrate")
 	flag.Parse()
 
 	if len(names) > 0 {
@@ -40,6 +43,7 @@ func init() {
 	println("Found", len(channelNames), "Channel names")
 	println("Join Channel Name:", joinChannelName)
 	println("Category Identifier:", categoryIdentifier)
+	println("Channel Bitrate:", defaultBitrate*1000)
 
 	if len(token) == 0 {
 		token = os.Getenv("TOKEN")
@@ -149,6 +153,10 @@ GuildChannelLookup:
 
 		newChannel.ParentID = categorys[0].ID
 		newChannel.Type = discordgo.ChannelTypeGuildVoice
+
+		if defaultBitrate != 64*1000 {
+			newChannel.Bitrate = defaultBitrate * 1000
+		}
 
 		_, err := session.GuildChannelCreateComplex(g.ID, newChannel)
 		if err != nil {
