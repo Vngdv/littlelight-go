@@ -115,17 +115,8 @@ GuildChannelLookup:
 			}
 		}
 
-		channel, err := session.State.Channel(event.ChannelID)
-		if err != nil {
-			return
-		}
-		parent, err := session.State.Channel(channel.ParentID)
-		if err != nil {
-			return
-		}
-
 		// Add empty channels to list
-		if UserCount(g.VoiceStates, channel.ID) == 0 && strings.Contains(parent.Name, categoryIdentifier) {
+		if UserCount(g.VoiceStates, channel.ID) == 0 {
 			emptyChannels = append(emptyChannels, channel)
 		}
 	}
@@ -167,7 +158,16 @@ GuildChannelLookup:
 	}
 
 	// Check if the user joind in an empty channel that has now one user
-	if UserCount(g.VoiceStates, event.ChannelID) == 1 {
+	channel, err := session.State.Channel(event.ChannelID)
+	if err != nil {
+		return
+	}
+	parent, err := session.State.Channel(channel.ParentID)
+	if err != nil {
+		return
+	}
+
+	if UserCount(g.VoiceStates, event.ChannelID) == 1 && strings.Contains(parent.Name, categoryIdentifier) {
 		var channelEdit discordgo.ChannelEdit
 
 		// Get last message
