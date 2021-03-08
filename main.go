@@ -8,9 +8,20 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+var channelNames = [...]string{
+	"Voice Channel",
+	"Edge Channel",
+	"🎈 Party Room",
+	"Kuschel Ecke",
+	"Another one",
+	"Just do it",
+	"Locked Room",
+}
 
 // token is used to store the discord token
 var token string
@@ -26,8 +37,6 @@ func init() {
 }
 
 func main() {
-	// loadStorage()
-
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -35,9 +44,11 @@ func main() {
 		return
 	}
 
-	// Add the voice state update handler
-	dg.AddHandler(voiceStateUpdate)
+	// Set random seed
+	rand.Seed(time.Now().Unix())
 
+	// Add the voice state update handler and set the intents
+	dg.AddHandler(voiceStateUpdate)
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildVoiceStates | discordgo.IntentsGuilds)
 
 	// Open a websocket connection to Discord and begin listening.
@@ -57,7 +68,6 @@ func main() {
 	dg.Close()
 }
 
-// Caching stuff would be more efficient but i expect this bot to not be online 24/7
 func voiceStateUpdate(session *discordgo.Session, event *discordgo.VoiceStateUpdate) {
 	// Get the Guild or return. It is only possible in Guilds to create Voice Channels
 	g, err := session.State.Guild(event.GuildID)
@@ -115,20 +125,8 @@ GuildChannelLookup:
 
 		var newChannel discordgo.GuildChannelCreateData
 
-		switch rand.Intn(5) {
-		case 0:
-			newChannel.Name = "Voice Channel"
-		case 1:
-			newChannel.Name = "Edge Channel"
-		case 2:
-			newChannel.Name = "🎈 Party Room"
-		case 3:
-			newChannel.Name = "Kuschel Ecke"
-		case 4:
-			newChannel.Name = "Another one"
-		case 5:
-			newChannel.Name = "Just do it"
-		}
+		// Random channel name
+		newChannel.Name = channelNames[rand.Intn(len(channelNames))]
 
 		newChannel.ParentID = categorys[0].ID
 		newChannel.Type = discordgo.ChannelTypeGuildVoice
