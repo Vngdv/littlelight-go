@@ -107,7 +107,6 @@ GuildChannelLookup:
 
 		// Add empty channels to list
 		if UserCount(g.VoiceStates, channel.ID) == 0 {
-			println(channel.ID)
 			emptyChannels = append(emptyChannels, channel)
 		}
 	}
@@ -123,8 +122,6 @@ GuildChannelLookup:
 			session.ChannelDelete(emptyChannel.ID)
 		}
 	} else if len(emptyChannels) == 0 {
-		println("-------------")
-		println(len(emptyChannels))
 
 		var newChannel discordgo.GuildChannelCreateData
 
