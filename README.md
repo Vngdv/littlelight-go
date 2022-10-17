@@ -1,7 +1,5 @@
 # littlelight-go
 
-TODO: Put more badges here.
-
 This is a discord bot that creates voice channels on demand.
 
 LittleLight is a bot that was made with three core features in mind:
