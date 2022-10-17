@@ -1,12 +1,35 @@
-# LittleLight
+# littlelight-go
 
-This is Discordbot is used to create Channels for Users
+TODO: Put more badges here.
 
-This Bot is written in a way that allows it to work without any config files.
+This is a discord bot that creates voice channels on demand.
 
-## Configuration
+LittleLight is a bot that was made with three core features in mind:
+- simplicity
+- no configuration files or storage
+- fast channel creation
 
-Runtime Flags
+Unlike other Bots, LittleLight uses your private chat with the bot as its store for channel names. We also just rename the empty channel you join instead of moving you away.
+
+## Table of Contents
+
+- [Install](#install)
+- [Usage](#usage)
+- [Maintainers](#maintainers)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Install
+
+Currently, this package is only runnable inside a docker container.
+If you want to run this as a standalone binary, you have to compile it yourself.
+
+Run with docker:
+```
+docker run ghcr.io/vngdv/littlelight:latest -b 96 -t <Your token>
+```
+
+### Runtime flags
 ```
 -t <Discord Token> -- Sets the Discord Token
 -j <Channel Name> -- Sets the default Join Channel name. Default: "📢 Join to own"
@@ -14,11 +37,24 @@ Runtime Flags
 -n <Channel Names> -- Sets the List of Channel Names to choose from. Seperated by ";". Default "Voice Channel; 🎈 Party Room"
 -b <Default Bitrate> -- Sets the default bitrate for the Channels in kbps. Default: 64
 ```
-Example usage: `-t <TOKEN> -j "Join here" -c "🚩" -n "Voice 1;Voice2"`
 
-**Some options are also available from the environment.**
+## Usage
 
-Environment variables
-```
-TOKEN=<Discord Token>-- Sets the Discord Token
-```
+Create a category inside discord that contains your category identifier. The default is: 🎤
+Now create a single voice channel inside and the bot will take over the rest.
+
+If you want to modify your channel name, just write the bot a DM with your preferred channel name inside. The next channel you create will get that name.
+
+## Maintainers
+
+[@Vngdv](https://github.com/Vngdv)
+
+## Contributing
+
+PRs accepted.
+
+Small note: If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+
+## License
+
+MIT © 2022 Vngdv
