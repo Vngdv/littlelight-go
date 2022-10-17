@@ -13,19 +13,22 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var channelNames = []string{
-	"Voice Channel",
-	"🎈 Party Room",
-}
+var (
+	// token is used to store the discord token
+	token string
 
-var joinChannelName string
+	channelNames = []string{
+		"Voice Channel",
+		"🎈 Party Room",
+	}
+	joinChannelName string
+	categoryIdentifier string
+	defaultBitrate int
 
-var categoryIdentifier string
+	allowUserChannelNames bool
+)
 
-var defaultBitrate int
 
-// token is used to store the discord token
-var token string
 
 func init() {
 	var names string
@@ -34,6 +37,7 @@ func init() {
 	flag.StringVar(&categoryIdentifier, "c", "🎤", "Category Identifier")
 	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.IntVar(&defaultBitrate, "b", 64, "Channel Bitrate")
+	flag.BoolVar(&allowUserChannelNames, "allow-channelnames", true, "Allow custom user channel names")
 	flag.Parse()
 
 	if len(names) > 0 {
@@ -44,6 +48,7 @@ func init() {
 	println("Join Channel Name:", joinChannelName)
 	println("Category Identifier:", categoryIdentifier)
 	println("Channel Bitrate:", defaultBitrate*1000)
+	println("Custom user channel names:", allowUserChannelNames)
 
 	if len(token) == 0 {
 		token = os.Getenv("TOKEN")
@@ -187,13 +192,18 @@ GuildChannelLookup:
 	if UserCount(g.VoiceStates, event.ChannelID) == 1 && strings.Contains(parent.Name, categoryIdentifier) {
 		var channelEdit discordgo.ChannelEdit
 
-		// Get last message
-		userChannel, _ := session.UserChannelCreate(event.UserID)
-		messages, _ := session.ChannelMessages(userChannel.ID, 1, "", "", "")
+		// Only get the custom channel names if we really need them
+		if(allowUserChannelNames) {
+			// Get last message
+			userChannel, _ := session.UserChannelCreate(event.UserID)
+			messages, _ := session.ChannelMessages(userChannel.ID, 1, "", "", "")
 
-		// Use custom name for channel if provided
-		if len(messages) > 0 {
-			channelEdit.Name = messages[0].Content
+			// Use custom name for channel if provided
+			if len(messages) > 0 {
+				channelEdit.Name = messages[0].Content
+			} else {
+				channelEdit.Name = channelNames[rand.Intn(len(channelNames))]
+			}
 		} else {
 			channelEdit.Name = channelNames[rand.Intn(len(channelNames))]
 		}
