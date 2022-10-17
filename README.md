@@ -36,6 +36,7 @@ docker run ghcr.io/vngdv/littlelight:latest -b 96 -t <Your token>
 -c <Category Identifier> -- Sets the Default Emoji, Sentence etc to Check for. Default: "🎤"
 -n <Channel Names> -- Sets the List of Channel Names to choose from. Seperated by ";". Default "Voice Channel; 🎈 Party Room"
 -b <Default Bitrate> -- Sets the default bitrate for the Channels in kbps. Default: 64
+--allow-channelnames=<True/false> -- Allows the use of custom channel names via dm chat. Default: true
 ```
 
 ## Usage
