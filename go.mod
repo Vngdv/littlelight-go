@@ -1,4 +1,4 @@
-module littlight
+module github.com/Vngdv/littlelight-go
 
 go 1.16
 
